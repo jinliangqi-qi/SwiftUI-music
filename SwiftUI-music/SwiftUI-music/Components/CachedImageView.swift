@@ -8,26 +8,32 @@
 import SwiftUI
 import Combine
 
-// 图片缓存管理器
-class ImageCache {
+// 图片缓存管理器 - Swift 6 兼容
+final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
     private let cache = NSCache<NSString, UIImage>()
+    private let lock = NSLock()
     
     func get(forKey key: String) -> UIImage? {
+        lock.lock()
+        defer { lock.unlock() }
         return cache.object(forKey: key as NSString)
     }
     
     func set(image: UIImage, forKey key: String) {
+        lock.lock()
+        defer { lock.unlock() }
         cache.setObject(image, forKey: key as NSString)
     }
 }
 
-// 图片加载器
+// 图片加载器 - 使用 @MainActor 确保 UI 更新在主线程
+@MainActor
 class ImageLoader: ObservableObject {
     @Published var image: UIImage?
-    private var cancellable: AnyCancellable?
+    private var loadTask: Task<Void, Never>?
     private let url: URL
-    private var cache = ImageCache.shared
+    private let cache = ImageCache.shared
     
     init(url: URL) {
         self.url = url
@@ -43,20 +49,22 @@ class ImageLoader: ObservableObject {
             return
         }
         
-        // 从网络加载
-        cancellable = URLSession.shared.dataTaskPublisher(for: url)
-            .map { UIImage(data: $0.data) }
-            .replaceError(with: nil)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] image in
-                guard let self = self, let image = image else { return }
-                self.image = image
-                self.cache.set(image: image, forKey: urlString)
+        // 从网络加载 - 使用现代 async/await
+        loadTask = Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let loadedImage = UIImage(data: data) {
+                    self.image = loadedImage
+                    self.cache.set(image: loadedImage, forKey: urlString)
+                }
+            } catch {
+                // 加载失败，保持 image 为 nil
             }
+        }
     }
     
     deinit {
-        cancellable?.cancel()
+        loadTask?.cancel()
     }
 }
 
@@ -95,7 +103,7 @@ struct CachedImageView: View {
                             .frame(width: 20, height: 20)
                             .rotationEffect(Angle(degrees: isLoading ? 360 : 0))
                             .animation(
-                                Animation.linear(duration: 1)
+                                .linear(duration: 1)
                                     .repeatForever(autoreverses: false),
                                 value: isLoading
                             )
@@ -103,7 +111,7 @@ struct CachedImageView: View {
                     .opacity(loadingOpacity)
                     .onAppear {
                         // 脉冲动画效果
-                        withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                        withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
                             loadingOpacity = 0.8
                         }
                         isLoading = true

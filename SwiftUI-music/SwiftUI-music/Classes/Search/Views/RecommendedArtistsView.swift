@@ -54,7 +54,7 @@ struct RecommendedArtistsView: View {
 }
 
 // 艺术家模型 - 重命名为SearchArtist以避免与ProfileModels中的Artist冲突
-struct SearchArtist: Identifiable {
+struct SearchArtist: Identifiable, Sendable {
     let id = UUID()
     let name: String
     let imageUrl: String

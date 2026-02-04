@@ -125,7 +125,7 @@ extension SettingsItemView {
     }
 }
 
-#Preview {
+#Preview(traits: .sizeThatFitsLayout) {
     VStack(spacing: 0) {
         SettingsItemView.withChevron(
             iconName: "person.circle",
@@ -152,5 +152,4 @@ extension SettingsItemView {
         )
     }
     .background(Color(.systemBackground))
-    .previewLayout(.sizeThatFits)
 }

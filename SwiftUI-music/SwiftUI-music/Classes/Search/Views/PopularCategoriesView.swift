@@ -64,7 +64,7 @@ struct PopularCategoriesView: View {
 }
 
 // 音乐分类模型
-struct MusicCategory: Identifiable {
+struct MusicCategory: Identifiable, Sendable {
     let id = UUID()
     let name: String
     let imageUrl: String

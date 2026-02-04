@@ -94,11 +94,7 @@ struct SearchResultRow: View {
                 }
             }
             .frame(width: 50, height: 50)
-            .clipShape(
-                result.type == .artist ? 
-                AnyShape(Circle()) : 
-                AnyShape(RoundedRectangle(cornerRadius: 8))
-            )
+            .clipShape(result.type == .artist ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: 8)))
             
             // 结果文本
             VStack(alignment: .leading, spacing: 4) {
@@ -124,7 +120,7 @@ struct SearchResultRow: View {
 }
 
 // 搜索结果模型
-struct SearchResult: Identifiable {
+struct SearchResult: Identifiable, Sendable {
     let id: UUID
     let title: String
     let subtitle: String
@@ -133,7 +129,7 @@ struct SearchResult: Identifiable {
 }
 
 // 搜索结果类型
-enum SearchResultType {
+enum SearchResultType: Sendable {
     case song, artist, album
     
     var iconName: String {

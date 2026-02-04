@@ -8,16 +8,17 @@
 import SwiftUI
 
 // 动画工具类，提供全局可复用的动画效果
+@MainActor
 struct AnimationUtils {
     // 标准动画时长
     static let shortDuration: Double = 0.2
     static let mediumDuration: Double = 0.3
     static let longDuration: Double = 0.5
     
-    // 常用动画曲线
-    static let springAnimation = Animation.spring(response: 0.4, dampingFraction: 0.7)
+    // 常用动画曲线 - 使用 Swift 6 兼容的新 API
+    static let springAnimation = Animation.spring(duration: 0.4, bounce: 0.3)
     static let easeAnimation = Animation.easeInOut(duration: mediumDuration)
-    static let bounceAnimation = Animation.interpolatingSpring(mass: 1.0, stiffness: 100, damping: 10)
+    static let bounceAnimation = Animation.spring(duration: 0.5, bounce: 0.5)
     
     // 页面转场动画
     static let slideTransition = AnyTransition.asymmetric(
@@ -33,7 +34,7 @@ struct AnimationUtils {
     
     // 列表项动画
     static func listItemAnimation(index: Int) -> Animation {
-        return .spring(response: 0.4, dampingFraction: 0.7)
+        return .spring(duration: 0.4, bounce: 0.3)
             .delay(Double(index) * 0.05) // 级联延迟效果
     }
     
@@ -51,7 +52,7 @@ struct AnimationUtils {
                 .scaleEffect(pulsing ? 1.05 : 1.0)
                 .opacity(pulsing ? 0.9 : 1.0)
                 .animation(
-                    Animation.easeInOut(duration: 1.2)
+                    .easeInOut(duration: 1.2)
                         .repeatForever(autoreverses: true),
                     value: pulsing
                 )
@@ -86,7 +87,7 @@ struct AnimationUtils {
                             .frame(width: geometry.size.width * 0.7)
                             .offset(x: animating ? geometry.size.width : -geometry.size.width)
                             .animation(
-                                Animation.easeInOut(duration: 1.5)
+                                .easeInOut(duration: 1.5)
                                     .delay(1)
                                     .repeatForever(autoreverses: false),
                                 value: animating
@@ -114,25 +115,67 @@ extension View {
     
     // 添加弹性出现动画
     func popInEffect(delay: Double = 0) -> some View {
-        self.scaleEffect(0.01)
-            .opacity(0)
-            .onAppear {
-                withAnimation(Animation.spring(response: 0.4, dampingFraction: 0.6).delay(delay)) {
-                    self.scaleEffect(1)
-                    self.opacity(1)
-                }
-            }
+        PopInEffectModifier(delay: delay, content: self)
     }
     
     // 添加滑入效果
     func slideInEffect(from edge: Edge, delay: Double = 0) -> some View {
-        self.offset(x: edge == .leading ? -50 : (edge == .trailing ? 50 : 0),
-                   y: edge == .top ? -50 : (edge == .bottom ? 50 : 0))
-            .opacity(0)
+        SlideInEffectModifier(edge: edge, delay: delay, content: self)
+    }
+}
+
+// 弹性出现动画修饰符
+struct PopInEffectModifier<Content: View>: View {
+    let delay: Double
+    let content: Content
+    
+    @State private var isVisible = false
+    
+    var body: some View {
+        content
+            .scaleEffect(isVisible ? 1 : 0.01)
+            .opacity(isVisible ? 1 : 0)
             .onAppear {
-                withAnimation(Animation.spring(response: 0.4, dampingFraction: 0.7).delay(delay)) {
-                    self.offset(x: 0, y: 0)
-                    self.opacity(1)
+                withAnimation(.spring(duration: 0.4, bounce: 0.4).delay(delay)) {
+                    isVisible = true
+                }
+            }
+    }
+}
+
+// 滑入效果修饰符
+struct SlideInEffectModifier<Content: View>: View {
+    let edge: Edge
+    let delay: Double
+    let content: Content
+    
+    @State private var isVisible = false
+    
+    private var offsetX: CGFloat {
+        guard !isVisible else { return 0 }
+        switch edge {
+        case .leading: return -50
+        case .trailing: return 50
+        default: return 0
+        }
+    }
+    
+    private var offsetY: CGFloat {
+        guard !isVisible else { return 0 }
+        switch edge {
+        case .top: return -50
+        case .bottom: return 50
+        default: return 0
+        }
+    }
+    
+    var body: some View {
+        content
+            .offset(x: offsetX, y: offsetY)
+            .opacity(isVisible ? 1 : 0)
+            .onAppear {
+                withAnimation(.spring(duration: 0.4, bounce: 0.3).delay(delay)) {
+                    isVisible = true
                 }
             }
     }

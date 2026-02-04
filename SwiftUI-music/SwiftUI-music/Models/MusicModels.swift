@@ -8,7 +8,7 @@
 import Foundation
 
 // 推荐卡片模型
-struct RecommendationCard: Identifiable {
+struct RecommendationCard: Identifiable, Sendable {
     let id = UUID()
     let title: String
     let description: String
@@ -17,7 +17,7 @@ struct RecommendationCard: Identifiable {
 }
 
 // 歌单模型
-struct Playlist: Identifiable {
+struct Playlist: Identifiable, Sendable {
     let id = UUID()
     let title: String
     let songCount: Int
@@ -25,7 +25,7 @@ struct Playlist: Identifiable {
 }
 
 // 歌曲模型
-struct Song: Identifiable {
+struct Song: Identifiable, Sendable {
     let id = UUID()
     let title: String
     let artist: String
@@ -33,10 +33,11 @@ struct Song: Identifiable {
     let isPlaying: Bool = false
 }
 
-// 模拟数据
-class MusicData {
+// 模拟数据 - 使用 @MainActor 和 nonisolated 确保线程安全
+@MainActor
+final class MusicData: Sendable {
     // 推荐卡片数据
-    static let recommendations: [RecommendationCard] = [
+    nonisolated static let recommendations: [RecommendationCard] = [
         RecommendationCard(
             title: "今日热门",
             description: "根据你的口味推荐",
@@ -64,7 +65,7 @@ class MusicData {
     ]
     
     // 热门歌单数据
-    static let playlists: [Playlist] = [
+    nonisolated static let playlists: [Playlist] = [
         Playlist(
             title: "华语经典",
             songCount: 120,
@@ -88,7 +89,7 @@ class MusicData {
     ]
     
     // 最近播放的歌曲数据
-    static let recentlyPlayed: [Song] = [
+    nonisolated static let recentlyPlayed: [Song] = [
         Song(
             title: "夜曲",
             artist: "周杰伦",
@@ -107,7 +108,7 @@ class MusicData {
     ]
     
     // 当前播放的歌曲
-    static let currentlyPlaying = Song(
+    nonisolated static let currentlyPlaying = Song(
         title: "夜曲",
         artist: "周杰伦",
         imageUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bXVzaWN8ZW58MHx8MHx8fDA%3D"
