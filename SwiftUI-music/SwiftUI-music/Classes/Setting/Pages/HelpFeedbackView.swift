@@ -33,51 +33,22 @@ struct HelpFeedbackView: View {
             SettingsGroupHeader(title: "问题反馈")
             
             SettingsCard {
-                SettingsRow(
-                    title: "提交反馈",
-                    subtitle: "报告问题或提出建议",
-                    showChevron: true
-                ) {
+                SettingsRow(title: "提交反馈", subtitle: "报告问题或提出建议", showChevron: true) {
                     showFeedbackForm = true
                 }
-                
                 Divider().padding(.leading, 16)
-                
-                SettingsRow(
-                    title: "查看反馈记录",
-                    subtitle: "查看已提交的反馈状态",
-                    showChevron: true
-                )
+                SettingsRow(title: "查看反馈记录", subtitle: "查看已提交的反馈状态", showChevron: true)
             }
             
             // 联系客服
             SettingsGroupHeader(title: "联系客服")
             
             SettingsCard {
-                HelpContactRow(
-                    icon: "headphones",
-                    title: "在线客服",
-                    subtitle: "工作时间 9:00-21:00",
-                    action: "连接"
-                )
-                
+                HelpContactRow(icon: "headphones", title: "在线客服", subtitle: "工作时间 9:00-21:00", action: "连接")
                 Divider().padding(.leading, 56)
-                
-                HelpContactRow(
-                    icon: "envelope.fill",
-                    title: "邮件支持",
-                    subtitle: "support@swiftui-music.com",
-                    action: "发送邮件"
-                )
-                
+                HelpContactRow(icon: "envelope.fill", title: "邮件支持", subtitle: "support@swiftui-music.com", action: "发送邮件")
                 Divider().padding(.leading, 56)
-                
-                HelpContactRow(
-                    icon: "phone.fill",
-                    title: "电话支持",
-                    subtitle: "400-888-8888",
-                    action: "拨打"
-                )
+                HelpContactRow(icon: "phone.fill", title: "电话支持", subtitle: "400-888-8888", action: "拨打")
             }
             
             // 其他帮助
@@ -101,24 +72,19 @@ struct HelpFeedbackView: View {
 struct FAQRow: View {
     let question: String
     let answer: String
-    
     @State private var isExpanded = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
             }) {
                 HStack {
                     Text(question)
                         .font(.system(size: 16))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)
-                    
                     Spacer()
-                    
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
@@ -158,13 +124,8 @@ struct HelpContactRow: View {
                 .cornerRadius(10)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 16))
-                    .foregroundColor(.primary)
-                
-                Text(subtitle)
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
+                Text(title).font(.system(size: 16)).foregroundColor(.primary)
+                Text(subtitle).font(.system(size: 13)).foregroundColor(.secondary)
             }
             
             Spacer()
@@ -177,122 +138,6 @@ struct HelpContactRow: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-    }
-}
-
-// MARK: - 反馈表单视图
-struct FeedbackFormView: View {
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var feedbackType = 0
-    @State private var feedbackContent = ""
-    @State private var contactInfo = ""
-    @State private var isSubmitting = false
-    @State private var showSuccess = false
-    
-    private let feedbackTypes = ["功能建议", "Bug反馈", "内容问题", "其他"]
-    
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // 反馈类型
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("反馈类型")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        
-                        Picker("反馈类型", selection: $feedbackType) {
-                            ForEach(0..<feedbackTypes.count, id: \.self) { index in
-                                Text(feedbackTypes[index]).tag(index)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                    
-                    // 反馈内容
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("反馈内容")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        
-                        TextEditor(text: $feedbackContent)
-                            .font(.system(size: 16))
-                            .frame(minHeight: 150)
-                            .padding(12)
-                            .background(Color(.systemBackground))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color(.systemGray4), lineWidth: 1)
-                            )
-                        
-                        Text("\(feedbackContent.count)/500")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    
-                    // 联系方式
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("联系方式（选填）")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        
-                        TextField("邮箱或手机号，方便我们联系您", text: $contactInfo)
-                            .font(.system(size: 16))
-                            .padding()
-                            .background(Color(.systemBackground))
-                            .cornerRadius(10)
-                    }
-                    
-                    // 提交按钮
-                    Button(action: submitFeedback) {
-                        HStack {
-                            if isSubmitting {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            } else {
-                                Text("提交反馈")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(feedbackContent.isEmpty ? Color.gray : Color.purple)
-                        .cornerRadius(12)
-                    }
-                    .disabled(feedbackContent.isEmpty || isSubmitting)
-                    .padding(.top, 12)
-                }
-                .padding(20)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("提交反馈")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") { dismiss() }
-                        .foregroundColor(.purple)
-                }
-            }
-        }
-        .alert("提交成功", isPresented: $showSuccess) {
-            Button("确定") { dismiss() }
-        } message: {
-            Text("感谢您的反馈，我们会尽快处理！")
-        }
-    }
-    
-    private func submitFeedback() {
-        isSubmitting = true
-        
-        // 模拟提交
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            isSubmitting = false
-            showSuccess = true
-        }
     }
 }
 
