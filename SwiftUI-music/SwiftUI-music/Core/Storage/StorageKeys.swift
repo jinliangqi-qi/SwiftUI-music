@@ -66,10 +66,6 @@ enum AudioQuality: String, Codable, CaseIterable, Sendable {
     }
 }
 
-// MARK: - 可存储协议
-/// 可编码为 JSON 的协议
-protocol StorableModel: Codable, Sendable {}
-
 // MARK: - 用户歌单模型
 /// 用户创建的歌单
 struct UserPlaylist: Identifiable, Codable, Sendable {
