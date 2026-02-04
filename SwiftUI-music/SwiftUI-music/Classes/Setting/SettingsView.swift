@@ -3,12 +3,14 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
-//  设置视图 - 集成 AuthService 和 StorageManager
+//  设置视图 - 集成 AuthService 和 StorageManager，支持 iPhone/iPad 响应式布局
 //
 
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.isWideLayout) private var isWideLayout
+    
     // 认证服务
     @StateObject private var authService = AuthService.shared
     // 存储管理器
@@ -41,193 +43,21 @@ struct SettingsView: View {
                 // 标题
                 HStack {
                     Text("设置")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding(.horizontal)
+                        .font(.system(size: isWideLayout ? 34 : 28, weight: .bold))
+                        .padding(.horizontal, isWideLayout ? 32 : 16)
                     Spacer()
                 }
                 .padding(.top)
                 
-                // 用户信息卡片
-                UserProfileCardView(
-                    userName: userName,
-                    userHandle: userHandle,
-                    avatarUrl: avatarUrl,
-                    action: {
-                        if !authService.isLoggedIn {
-                            showLogin = true
-                        }
-                    }
-                )
-                .padding(.horizontal)
-                .padding(.top, 8)
-                
-                // 账号设置
-                SettingsSectionView(title: "账号") {
-                    VStack(spacing: 0) {
-                        SettingsItemView.withChevron(
-                            iconName: "person.circle",
-                            iconBackgroundColor: .purple,
-                            iconForegroundColor: .purple,
-                            title: "个人资料",
-                            action: {}
-                        )
-                        Divider()
-                        SettingsItemView.withChevron(
-                            iconName: "envelope",
-                            iconBackgroundColor: .green,
-                            iconForegroundColor: .green,
-                            title: "邮箱与安全",
-                            action: {}
-                        )
-                        Divider()
-                        SettingsItemView.withChevron(
-                            iconName: "bell",
-                            iconBackgroundColor: .blue,
-                            iconForegroundColor: .blue,
-                            title: "通知设置",
-                            action: {}
-                        )
-                    }
+                // 宽屏使用两列布局
+                if isWideLayout {
+                    wideSettingsLayout
+                } else {
+                    compactSettingsLayout
                 }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 播放设置 - 绑定 StorageManager
-                SettingsSectionView(title: "播放") {
-                    VStack(spacing: 0) {
-                        SettingsItemView.withText(
-                            iconName: "slider.horizontal.3",
-                            iconBackgroundColor: .red,
-                            iconForegroundColor: .red,
-                            title: "音频质量",
-                            text: storageManager.audioQuality.rawValue
-                        )
-                        Divider()
-                        SettingsItemView.withChevron(
-                            iconName: "waveform",
-                            iconBackgroundColor: .yellow,
-                            iconForegroundColor: .yellow,
-                            title: "均衡器",
-                            action: {}
-                        )
-                        Divider()
-                        SettingsItemView.withToggle(
-                            iconName: "shuffle",
-                            iconBackgroundColor: .pink,
-                            iconForegroundColor: .pink,
-                            title: "自动播放",
-                            isOn: $storageManager.autoPlayEnabled
-                        )
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 下载设置 - 绑定 StorageManager
-                SettingsSectionView(title: "下载") {
-                    VStack(spacing: 0) {
-                        SettingsItemView.withText(
-                            iconName: "arrow.down.circle",
-                            iconBackgroundColor: .indigo,
-                            iconForegroundColor: .indigo,
-                            title: "下载质量",
-                            text: storageManager.downloadQuality.rawValue
-                        )
-                        Divider()
-                        SettingsItemView.withToggle(
-                            iconName: "wifi",
-                            iconBackgroundColor: .teal,
-                            iconForegroundColor: .teal,
-                            title: "仅WiFi下载",
-                            isOn: $storageManager.wifiOnlyDownload
-                        )
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 存储管理
-                SettingsSectionView(title: "存储") {
-                    VStack(spacing: 0) {
-                        SettingsItemView.withText(
-                            iconName: "internaldrive",
-                            iconBackgroundColor: .orange,
-                            iconForegroundColor: .orange,
-                            title: "已下载",
-                            text: "\(storageManager.downloadedSongs.count) 首"
-                        )
-                        Divider()
-                        SettingsItemView.withText(
-                            iconName: "heart.fill",
-                            iconBackgroundColor: .red,
-                            iconForegroundColor: .red,
-                            title: "收藏歌曲",
-                            text: "\(storageManager.likedSongs.count) 首"
-                        )
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 关于与支持
-                SettingsSectionView(title: "关于与支持") {
-                    VStack(spacing: 0) {
-                        SettingsItemView.withChevron(
-                            iconName: "info.circle",
-                            iconBackgroundColor: .gray,
-                            iconForegroundColor: .gray,
-                            title: "关于我们",
-                            action: {}
-                        )
-                        Divider()
-                        SettingsItemView.withChevron(
-                            iconName: "questionmark.circle",
-                            iconBackgroundColor: .gray,
-                            iconForegroundColor: .gray,
-                            title: "帮助与反馈",
-                            action: {}
-                        )
-                        Divider()
-                        SettingsItemView.withChevron(
-                            iconName: "shield",
-                            iconBackgroundColor: .gray,
-                            iconForegroundColor: .gray,
-                            title: "隐私政策",
-                            action: {}
-                        )
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 登录/退出登录按钮
-                Button(action: {
-                    if authService.isLoggedIn {
-                        showLogoutConfirm = true
-                    } else {
-                        showLogin = true
-                    }
-                }) {
-                    Text(authService.isLoggedIn ? "退出登录" : "登录账号")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(authService.isLoggedIn ? .red : .purple)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                
-                // 版本信息
-                Text("版本 v1.0.1 (202207)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .padding(.top, 16)
-                    .padding(.bottom, 100)
             }
+            .frame(maxWidth: isWideLayout ? 900 : .infinity)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showLogin) {
@@ -241,6 +71,262 @@ struct SettingsView: View {
         } message: {
             Text("确定要退出登录吗？")
         }
+    }
+    
+    // MARK: - 紧凑布局（iPhone 和 iPad 竖屏）
+    private var compactSettingsLayout: some View {
+        VStack(spacing: 0) {
+            // 用户信息卡片
+            UserProfileCardView(
+                userName: userName,
+                userHandle: userHandle,
+                avatarUrl: avatarUrl,
+                action: {
+                    if !authService.isLoggedIn {
+                        showLogin = true
+                    }
+                }
+            )
+            .padding(.horizontal)
+            .padding(.top, 8)
+            
+            // 账号设置
+            accountSection
+            
+            // 播放设置
+            playbackSection
+            
+            // 下载设置
+            downloadSection
+            
+            // 存储管理
+            storageSection
+            
+            // 关于与支持
+            aboutSection
+            
+            // 登录/退出登录按钮
+            loginButton
+            
+            // 版本信息
+            versionInfo
+        }
+    }
+    
+    // MARK: - 宽屏布局（iPad 横屏，两列）
+    private var wideSettingsLayout: some View {
+        VStack(spacing: 0) {
+            // 用户信息卡片
+            UserProfileCardView(
+                userName: userName,
+                userHandle: userHandle,
+                avatarUrl: avatarUrl,
+                action: {
+                    if !authService.isLoggedIn {
+                        showLogin = true
+                    }
+                }
+            )
+            .padding(.horizontal, 32)
+            .padding(.top, 8)
+            
+            // 两列设置项
+            HStack(alignment: .top, spacing: 24) {
+                // 左列
+                VStack(spacing: 0) {
+                    accountSection
+                    playbackSection
+                    downloadSection
+                }
+                .frame(maxWidth: .infinity)
+                
+                // 右列
+                VStack(spacing: 0) {
+                    storageSection
+                    aboutSection
+                    loginButton
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 16)
+            
+            // 版本信息
+            versionInfo
+        }
+    }
+    
+    // MARK: - 各设置区块
+    private var accountSection: some View {
+        SettingsSectionView(title: "账号") {
+            VStack(spacing: 0) {
+                SettingsItemView.withChevron(
+                    iconName: "person.circle",
+                    iconBackgroundColor: .purple,
+                    iconForegroundColor: .purple,
+                    title: "个人资料",
+                    action: {}
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "envelope",
+                    iconBackgroundColor: .green,
+                    iconForegroundColor: .green,
+                    title: "邮箱与安全",
+                    action: {}
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "bell",
+                    iconBackgroundColor: .blue,
+                    iconForegroundColor: .blue,
+                    title: "通知设置",
+                    action: {}
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var playbackSection: some View {
+        SettingsSectionView(title: "播放") {
+            VStack(spacing: 0) {
+                SettingsItemView.withText(
+                    iconName: "slider.horizontal.3",
+                    iconBackgroundColor: .red,
+                    iconForegroundColor: .red,
+                    title: "音频质量",
+                    text: storageManager.audioQuality.rawValue
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "waveform",
+                    iconBackgroundColor: .yellow,
+                    iconForegroundColor: .yellow,
+                    title: "均衡器",
+                    action: {}
+                )
+                Divider()
+                SettingsItemView.withToggle(
+                    iconName: "shuffle",
+                    iconBackgroundColor: .pink,
+                    iconForegroundColor: .pink,
+                    title: "自动播放",
+                    isOn: $storageManager.autoPlayEnabled
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var downloadSection: some View {
+        SettingsSectionView(title: "下载") {
+            VStack(spacing: 0) {
+                SettingsItemView.withText(
+                    iconName: "arrow.down.circle",
+                    iconBackgroundColor: .indigo,
+                    iconForegroundColor: .indigo,
+                    title: "下载质量",
+                    text: storageManager.downloadQuality.rawValue
+                )
+                Divider()
+                SettingsItemView.withToggle(
+                    iconName: "wifi",
+                    iconBackgroundColor: .teal,
+                    iconForegroundColor: .teal,
+                    title: "仅WiFi下载",
+                    isOn: $storageManager.wifiOnlyDownload
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var storageSection: some View {
+        SettingsSectionView(title: "存储") {
+            VStack(spacing: 0) {
+                SettingsItemView.withText(
+                    iconName: "internaldrive",
+                    iconBackgroundColor: .orange,
+                    iconForegroundColor: .orange,
+                    title: "已下载",
+                    text: "\(storageManager.downloadedSongs.count) 首"
+                )
+                Divider()
+                SettingsItemView.withText(
+                    iconName: "heart.fill",
+                    iconBackgroundColor: .red,
+                    iconForegroundColor: .red,
+                    title: "收藏歌曲",
+                    text: "\(storageManager.likedSongs.count) 首"
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var aboutSection: some View {
+        SettingsSectionView(title: "关于与支持") {
+            VStack(spacing: 0) {
+                SettingsItemView.withChevron(
+                    iconName: "info.circle",
+                    iconBackgroundColor: .gray,
+                    iconForegroundColor: .gray,
+                    title: "关于我们",
+                    action: {}
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "questionmark.circle",
+                    iconBackgroundColor: .gray,
+                    iconForegroundColor: .gray,
+                    title: "帮助与反馈",
+                    action: {}
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "shield",
+                    iconBackgroundColor: .gray,
+                    iconForegroundColor: .gray,
+                    title: "隐私政策",
+                    action: {}
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var loginButton: some View {
+        Button(action: {
+            if authService.isLoggedIn {
+                showLogoutConfirm = true
+            } else {
+                showLogin = true
+            }
+        }) {
+            Text(authService.isLoggedIn ? "退出登录" : "登录账号")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(authService.isLoggedIn ? .red : .purple)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    private var versionInfo: some View {
+        Text("版本 v1.0.1 (202207)")
+            .font(.system(size: 12))
+            .foregroundColor(.secondary)
+            .padding(.top, 16)
+            .padding(.bottom, isWideLayout ? 140 : 100)
     }
 }
 

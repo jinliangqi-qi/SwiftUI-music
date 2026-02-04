@@ -3,12 +3,15 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
+//  个人资料视图 - 支持 iPhone/iPad 响应式布局
 //
 
 import SwiftUI
 import UIKit
 
 struct ProfileView: View {
+    @Environment(\.isWideLayout) private var isWideLayout
+    
     // 用户数据
     let username = "小明"
     let userHandle = "@xiaoming"
@@ -72,7 +75,7 @@ struct ProfileView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                // 用户信息头部
+                // 用户信息头部（背景图延伸到状态栏）
                 ProfileHeaderView(
                     username: username,
                     userHandle: userHandle,
@@ -80,28 +83,69 @@ struct ProfileView: View {
                     backgroundUrl: backgroundUrl
                 )
                 
-                // 用户数据统计
-                UserStatsView(stats: stats)
-                    .padding(.top, 20)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                
-                // 收听统计
-                ListeningStatsView(stats: listeningStats)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                
-                // 喜爱的艺术家
-                FavoriteArtistsView(artists: favoriteArtists)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                
-                // 最近活动
-                RecentActivitiesView(activities: recentActivities)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 100) // 增加底部间距，为迷你播放器和导航栏留出空间
+                // 宽屏使用两列布局，其他使用单列
+                if isWideLayout {
+                    wideProfileContent
+                } else {
+                    compactProfileContent
+                }
             }
-            .padding(.top, 16) // 使用固定的顶部间距，不再依赖安全区域
+            .frame(maxWidth: isWideLayout ? 900 : .infinity)
+            .frame(maxWidth: .infinity)
+        }
+        .ignoresSafeArea(edges: .top) // 让内容延伸到状态栏区域
+    }
+    
+    // MARK: - 紧凑布局（iPhone 和 iPad 竖屏）
+    private var compactProfileContent: some View {
+        VStack(spacing: 0) {
+            // 用户数据统计
+            UserStatsView(stats: stats)
+                .padding(.top, 20)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            
+            // 收听统计
+            ListeningStatsView(stats: listeningStats)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            
+            // 喜爱的艺术家
+            FavoriteArtistsView(artists: favoriteArtists)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            
+            // 最近活动
+            RecentActivitiesView(activities: recentActivities)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 100)
+        }
+    }
+    
+    // MARK: - 宽屏布局（iPad 横屏，两列）
+    private var wideProfileContent: some View {
+        VStack(spacing: 0) {
+            // 用户数据统计
+            UserStatsView(stats: stats)
+                .padding(.top, 24)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 16)
+            
+            // 两列布局：左侧收听统计，右侧最近活动
+            HStack(alignment: .top, spacing: 24) {
+                // 左侧
+                VStack(spacing: 16) {
+                    ListeningStatsView(stats: listeningStats)
+                    FavoriteArtistsView(artists: favoriteArtists)
+                }
+                .frame(maxWidth: .infinity)
+                
+                // 右侧
+                RecentActivitiesView(activities: recentActivities)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 140)
         }
     }
 }

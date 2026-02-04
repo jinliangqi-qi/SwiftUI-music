@@ -13,12 +13,21 @@ struct ProfileHeaderView: View {
     let avatarUrl: String
     let backgroundUrl: String
     
+    // 获取安全区域顶部高度
+    private var safeAreaTop: CGFloat {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window.safeAreaInsets.top
+        }
+        return 0
+    }
+    
     var body: some View {
         ZStack(alignment: .bottom) {
-            // 背景图片
+            // 背景图片 - 延伸到状态栏顶部
             VStack(spacing: 0) {
                 CachedImageView(urlString: backgroundUrl)
-                    .frame(height: 160)
+                    .frame(height: 160 + safeAreaTop) // 增加安全区域高度
                     .overlay(Color.black.opacity(0.4))
                     .clipped()
                 
@@ -55,7 +64,7 @@ struct ProfileHeaderView: View {
                 Spacer()
             }
         }
-        .frame(height: 200)
+        .frame(height: 200 + safeAreaTop) // 动态计算总高度
     }
 }
 

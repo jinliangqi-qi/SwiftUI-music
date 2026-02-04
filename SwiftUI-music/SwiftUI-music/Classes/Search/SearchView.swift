@@ -12,6 +12,8 @@ import SwiftUI
 // MARK: - 搜索视图
 /// 搜索功能的主视图，包含搜索框、热门搜索、搜索历史等
 struct SearchView: View {
+    @Environment(\.isWideLayout) private var isWideLayout
+    
     // MARK: - Properties
     
     /// 搜索文本
@@ -26,7 +28,7 @@ struct SearchView: View {
             VStack(spacing: 0) {
                 // 搜索框
                 SearchBarView(searchText: $searchText, isSearching: $isSearching)
-                    .padding(.horizontal)
+                    .padding(.horizontal, isWideLayout ? 32 : 16)
                     .padding(.top)
                 
                 if !isSearching {
@@ -35,11 +37,13 @@ struct SearchView: View {
                 } else {
                     // 搜索状态 - 显示搜索结果
                     SearchResultsView(searchText: searchText)
-                        .padding(.horizontal)
+                        .padding(.horizontal, isWideLayout ? 32 : 16)
                         .padding(.top, 16)
-                        .padding(.bottom, 100)
+                        .padding(.bottom, isWideLayout ? 140 : 100)
                 }
             }
+            .frame(maxWidth: isWideLayout ? 900 : .infinity)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.systemBackground))
         // 监听搜索状态变化，保存搜索历史
@@ -55,6 +59,18 @@ struct SearchView: View {
     
     /// 默认内容（非搜索状态）
     private var defaultContent: some View {
+        VStack(spacing: 0) {
+            // 宽屏上使用网格布局
+            if isWideLayout {
+                wideSearchContent
+            } else {
+                compactSearchContent
+            }
+        }
+    }
+    
+    /// 紧凑布局搜索内容（iPhone 和 iPad 竖屏）
+    private var compactSearchContent: some View {
         VStack(spacing: 0) {
             // 热门搜索
             PopularSearchView()
@@ -75,7 +91,33 @@ struct SearchView: View {
             PopularCategoriesView()
                 .padding(.horizontal)
                 .padding(.top, 16)
-                .padding(.bottom, 100) // 为迷你播放器和导航栏留出空间
+                .padding(.bottom, 100)
+        }
+    }
+    
+    /// 宽屏搜索内容（iPad 横屏，两列布局）
+    private var wideSearchContent: some View {
+        VStack(spacing: 0) {
+            // 第一行：热门搜索 + 搜索历史
+            HStack(alignment: .top, spacing: 24) {
+                PopularSearchView()
+                    .frame(maxWidth: .infinity)
+                SearchHistoryView()
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 16)
+            
+            // 第二行：推荐艺术家
+            RecommendedArtistsView()
+                .padding(.horizontal, 32)
+                .padding(.top, 24)
+            
+            // 第三行：热门分类
+            PopularCategoriesView()
+                .padding(.horizontal, 32)
+                .padding(.top, 24)
+                .padding(.bottom, 140)
         }
     }
 }

@@ -3,6 +3,7 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
+//  资料库视图 - 支持 iPhone/iPad 响应式布局
 //
 
 import SwiftUI
@@ -20,34 +21,36 @@ struct LibraryView: View {
             VStack(spacing: 0) {
                 // 标题栏
                 LibraryHeaderView()
-                    .padding(.horizontal)
+                    .adaptiveHorizontalPadding()
                     .padding(.top)
                 
                 // 分段控制器
                 SegmentedControlView(selectedIndex: $selectedSegment, segments: segments)
-                    .padding(.horizontal)
+                    .adaptiveHorizontalPadding()
                     .padding(.vertical, 12)
                 
                 // 搜索栏
                 LibrarySearchBarView(searchText: $searchText)
-                    .padding(.horizontal)
+                    .adaptiveHorizontalPadding()
                     .padding(.bottom, 12)
                 
-                // 内容区域
-                VStack(spacing: 16) {
+                // 内容区域 - iPad 使用更宽的布局
+                VStack(spacing: DeviceType.isPad ? 24 : 16) {
                     // 我喜欢的歌曲
                     FavoriteSongsView()
                     
                     // 最近添加
                     RecentlyAddedView()
-                        .padding(.horizontal)
+                        .adaptiveHorizontalPadding()
                     
                     // 字母索引列表
                     AlphabeticalListView()
-                        .padding(.horizontal)
-                        .padding(.bottom, 100) // 增加底部间距，为迷你播放器和导航栏留出空间
+                        .adaptiveHorizontalPadding()
+                        .adaptiveBottomPadding()
                 }
             }
+            .frame(maxWidth: AdaptiveSize.maxContentWidth)
+            .frame(maxWidth: .infinity) // 在 iPad 上居中显示
         }
         .background(Color(.systemBackground))
     }
