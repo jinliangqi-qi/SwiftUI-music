@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var showAbout = false
     @State private var showHelpFeedback = false
     @State private var showPrivacyPolicy = false
+    @State private var showCacheSettings = false
     
     // 用户信息
     private var userName: String {
@@ -96,6 +97,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView()
+        }
+        .sheet(isPresented: $showCacheSettings) {
+            CacheSettingsView()
         }
         .alert("确认退出", isPresented: $showLogoutConfirm) {
             Button("取消", role: .cancel) {}
@@ -295,6 +299,14 @@ struct SettingsView: View {
                     iconForegroundColor: .red,
                     title: "收藏歌曲",
                     text: "\(storageManager.likedSongs.count) 首"
+                )
+                Divider()
+                SettingsItemView.withChevron(
+                    iconName: "externaldrive.badge.xmark",
+                    iconBackgroundColor: .purple,
+                    iconForegroundColor: .purple,
+                    title: "缓存管理",
+                    action: { showCacheSettings = true }
                 )
             }
         }

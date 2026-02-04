@@ -2,8 +2,8 @@
 //  NetworkManager.swift
 //  SwiftUI-music
 //
-//  网络层管理器 - 封装音乐 API 请求
-//  兼容 iOS 18+ / iPadOS / Swift 6
+//  网络层管理器 - 封装音乐 API 请求，支持数据缓存
+//  兼容 iOS 26+ / iPadOS / Swift 6
 //
 
 import Foundation
@@ -114,8 +114,42 @@ struct PlaylistInfo: Identifiable, Codable, Sendable {
     }
 }
 
+// MARK: - 缓存键生成
+/// API 缓存键
+enum APICacheKey {
+    case search(query: String)
+    case hotSearches
+    case recommendedSongs
+    case recommendedPlaylists
+    case recommendedArtists
+    case songDetail(id: String)
+    case playlistDetail(id: String)
+    case charts
+    
+    var key: String {
+        switch self {
+        case .search(let query):
+            return "api_search_\(query)"
+        case .hotSearches:
+            return "api_hot_searches"
+        case .recommendedSongs:
+            return "api_recommended_songs"
+        case .recommendedPlaylists:
+            return "api_recommended_playlists"
+        case .recommendedArtists:
+            return "api_recommended_artists"
+        case .songDetail(let id):
+            return "api_song_\(id)"
+        case .playlistDetail(let id):
+            return "api_playlist_\(id)"
+        case .charts:
+            return "api_charts"
+        }
+    }
+}
+
 // MARK: - 网络管理器
-/// 网络请求管理器
+/// 网络请求管理器 - 支持数据缓存
 actor NetworkManager {
     
     // MARK: - 单例
@@ -130,6 +164,9 @@ actor NetworkManager {
     
     /// 请求超时时间
     private let timeout: TimeInterval = 30
+    
+    /// 是否启用缓存
+    private var cacheEnabled: Bool = true
     
     // MARK: - 初始化
     private init() {
@@ -152,6 +189,29 @@ actor NetworkManager {
         self.baseURL = url
     }
     
+    /// 设置是否启用缓存
+    func setCacheEnabled(_ enabled: Bool) {
+        self.cacheEnabled = enabled
+    }
+    
+    // MARK: - 缓存辅助方法
+    
+    /// 从缓存获取数据
+    private func getFromCache<T: Decodable & Sendable>(_ type: T.Type, cacheKey: APICacheKey) async -> T? {
+        guard cacheEnabled else { return nil }
+        return await MainActor.run {
+            CacheManager.shared.getData(type, forKey: cacheKey.key)
+        }
+    }
+    
+    /// 保存数据到缓存
+    private func saveToCache<T: Encodable & Sendable>(_ value: T, cacheKey: APICacheKey) async {
+        guard cacheEnabled else { return }
+        await MainActor.run {
+            CacheManager.shared.setData(value, forKey: cacheKey.key)
+        }
+    }
+    
     // MARK: - 搜索 API
     
     /// 搜索歌曲、艺术家、专辑
@@ -159,19 +219,44 @@ actor NetworkManager {
     ///   - query: 搜索关键词
     ///   - type: 搜索类型（可选：song, artist, album, playlist, all）
     ///   - limit: 返回数量限制
+    ///   - useCache: 是否使用缓存
     /// - Returns: 搜索结果
-    func search(query: String, type: String = "all", limit: Int = 20) async throws -> SearchResults {
+    func search(query: String, type: String = "all", limit: Int = 20, useCache: Bool = true) async throws -> SearchResults {
+        let cacheKey = APICacheKey.search(query: query)
+        
+        // 尝试从缓存获取
+        if useCache, let cached: SearchResults = await getFromCache(SearchResults.self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 搜索结果 - \(query)")
+            return cached
+        }
+        
         // 由于没有真实 API，返回模拟数据
-        return generateMockSearchResults(query: query)
+        let results = generateMockSearchResults(query: query)
+        
+        // 保存到缓存
+        await saveToCache(results, cacheKey: cacheKey)
+        print("💾 已缓存: 搜索结果 - \(query)")
+        
+        return results
     }
     
     /// 获取热门搜索关键词
-    func getHotSearches() async throws -> [String] {
+    func getHotSearches(useCache: Bool = true) async throws -> [String] {
+        let cacheKey = APICacheKey.hotSearches
+        
+        if useCache, let cached: [String] = await getFromCache([String].self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 热门搜索")
+            return cached
+        }
+        
         // 返回模拟数据
-        return [
+        let results = [
             "周杰伦", "陈奕迅", "林俊杰", "Taylor Swift",
             "华语流行", "热门说唱", "抖音热歌", "独立民谣", "粤语经典"
         ]
+        
+        await saveToCache(results, cacheKey: cacheKey)
+        return results
     }
     
     // MARK: - 歌曲 API
@@ -179,9 +264,18 @@ actor NetworkManager {
     /// 获取歌曲详情
     /// - Parameter songId: 歌曲 ID
     /// - Returns: 歌曲详情
-    func getSongDetail(songId: String) async throws -> Song {
+    func getSongDetail(songId: String, useCache: Bool = true) async throws -> Song {
+        let cacheKey = APICacheKey.songDetail(id: songId)
+        
+        if useCache, let cached: Song = await getFromCache(Song.self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 歌曲详情 - \(songId)")
+            return cached
+        }
+        
         // 返回模拟数据
-        return MusicData.recentlyPlayed.first!
+        let song = MusicData.recentlyPlayed.first!
+        await saveToCache(song, cacheKey: cacheKey)
+        return song
     }
     
     /// 获取歌曲播放 URL
@@ -213,22 +307,49 @@ actor NetworkManager {
     /// 获取推荐歌曲
     /// - Parameter limit: 数量限制
     /// - Returns: 推荐歌曲列表
-    func getRecommendedSongs(limit: Int = 20) async throws -> [Song] {
-        return MusicData.recentlyPlayed
+    func getRecommendedSongs(limit: Int = 20, useCache: Bool = true) async throws -> [Song] {
+        let cacheKey = APICacheKey.recommendedSongs
+        
+        if useCache, let cached: [Song] = await getFromCache([Song].self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 推荐歌曲")
+            return cached
+        }
+        
+        let songs = MusicData.recentlyPlayed
+        await saveToCache(songs, cacheKey: cacheKey)
+        return songs
     }
     
     /// 获取推荐歌单
     /// - Parameter limit: 数量限制
     /// - Returns: 推荐歌单列表
-    func getRecommendedPlaylists(limit: Int = 10) async throws -> [Playlist] {
-        return MusicData.playlists
+    func getRecommendedPlaylists(limit: Int = 10, useCache: Bool = true) async throws -> [Playlist] {
+        let cacheKey = APICacheKey.recommendedPlaylists
+        
+        if useCache, let cached: [Playlist] = await getFromCache([Playlist].self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 推荐歌单")
+            return cached
+        }
+        
+        let playlists = MusicData.playlists
+        await saveToCache(playlists, cacheKey: cacheKey)
+        return playlists
     }
     
     /// 获取推荐艺术家
     /// - Parameter limit: 数量限制
     /// - Returns: 推荐艺术家列表
-    func getRecommendedArtists(limit: Int = 10) async throws -> [ArtistInfo] {
-        return generateMockArtists()
+    func getRecommendedArtists(limit: Int = 10, useCache: Bool = true) async throws -> [ArtistInfo] {
+        let cacheKey = APICacheKey.recommendedArtists
+        
+        if useCache, let cached: [ArtistInfo] = await getFromCache([ArtistInfo].self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 推荐艺术家")
+            return cached
+        }
+        
+        let artists = generateMockArtists()
+        await saveToCache(artists, cacheKey: cacheKey)
+        return artists
     }
     
     // MARK: - 歌单 API
@@ -249,13 +370,40 @@ actor NetworkManager {
     // MARK: - 排行榜 API
     
     /// 获取排行榜列表
-    func getCharts() async throws -> [PlaylistInfo] {
-        return [
+    func getCharts(useCache: Bool = true) async throws -> [PlaylistInfo] {
+        let cacheKey = APICacheKey.charts
+        
+        if useCache, let cached: [PlaylistInfo] = await getFromCache([PlaylistInfo].self, cacheKey: cacheKey) {
+            print("📦 使用缓存: 排行榜")
+            return cached
+        }
+        
+        let charts = [
             PlaylistInfo(name: "飙升榜", creator: "官方", imageUrl: MusicData.playlists[0].imageUrl, songCount: 100),
             PlaylistInfo(name: "新歌榜", creator: "官方", imageUrl: MusicData.playlists[1].imageUrl, songCount: 100),
             PlaylistInfo(name: "热歌榜", creator: "官方", imageUrl: MusicData.playlists[2].imageUrl, songCount: 100),
             PlaylistInfo(name: "原创榜", creator: "官方", imageUrl: MusicData.playlists[3].imageUrl, songCount: 100)
         ]
+        
+        await saveToCache(charts, cacheKey: cacheKey)
+        return charts
+    }
+    
+    // MARK: - 强制刷新方法
+    
+    /// 强制刷新搜索结果（忽略缓存）
+    func refreshSearch(query: String) async throws -> SearchResults {
+        return try await search(query: query, useCache: false)
+    }
+    
+    /// 强制刷新推荐歌曲（忽略缓存）
+    func refreshRecommendedSongs() async throws -> [Song] {
+        return try await getRecommendedSongs(useCache: false)
+    }
+    
+    /// 强制刷新推荐歌单（忽略缓存）
+    func refreshRecommendedPlaylists() async throws -> [Playlist] {
+        return try await getRecommendedPlaylists(useCache: false)
     }
     
     // MARK: - 通用请求方法
