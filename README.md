@@ -165,6 +165,20 @@ SwiftUI-music/
 │   ├── Profile/                        # 个人资料模块
 │   ├── Player/                         # 播放器模块
 │   ├── Setting/                        # 设置模块
+│   │   ├── SettingsView.swift          # 设置主页面
+│   │   ├── Models/
+│   │   │   └── SettingsNavigation.swift    # 设置导航路由
+│   │   ├── Views/
+│   │   │   └── SettingsDetailContainer.swift   # 可复用组件
+│   │   └── Pages/                      # 设置子页面
+│   │       ├── ProfileEditView.swift       # 个人资料编辑
+│   │       ├── EmailSecurityView.swift     # 邮箱与安全
+│   │       ├── NotificationSettingsView.swift  # 通知设置
+│   │       ├── AudioQualitySettingsView.swift  # 音频质量
+│   │       ├── EqualizerView.swift         # 均衡器
+│   │       ├── AboutView.swift             # 关于我们
+│   │       ├── HelpFeedbackView.swift      # 帮助与反馈
+│   │       └── PrivacyPolicyView.swift     # 隐私政策
 │   └── Main/                           # 主框架
 ├── Models/                         # 数据模型
 │   └── MusicModels.swift               # 音乐相关模型
@@ -465,10 +479,99 @@ struct SettingsView: View {
 
 ![Simulator Screenshot - iPhone 16 Pro - 2025-03-14 at 15.56.20.png](https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/9e38c27daef144818be6ed6ae10d4f1e~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg6b2Q6YeR5Lqu:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMzUyNjg4OTAzMDU2MDM0NCJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1742544309&x-orig-sign=wLyvv%2B%2B9azrkJEalkUFtAWOz170%3D)
 
+#### 设置子页面
+
+设置模块包含以下完整的子页面：
+
+##### 5.1 个人资料编辑（ProfileEditView）
+
+位置：`Classes/Setting/Pages/ProfileEditView.swift`
+
+- **头像编辑**：支持更换用户头像
+- **用户名修改**：修改显示名称
+- **个人简介**：编辑个人介绍文字
+- **数据集成**：与 AuthService 集成，实时保存用户信息
+
+##### 5.2 邮箱与安全（EmailSecurityView）
+
+位置：`Classes/Setting/Pages/EmailSecurityView.swift`
+
+- **邮箱管理**：显示绑定邮箱（脱敏显示），支持更换邮箱
+- **密码修改**：支持验证旧密码并设置新密码
+- **密码强度**：实时显示密码强度提示
+- **账号注销**：提供账号删除功能（需二次确认）
+
+##### 5.3 通知设置（NotificationSettingsView）
+
+位置：`Classes/Setting/Pages/NotificationSettingsView.swift`
+
+- **系统权限检测**：使用 `UNUserNotificationCenter` 检测通知权限状态
+- **音乐通知**：新歌推送、播放列表更新提醒
+- **社交通知**：关注、评论、点赞通知
+- **系统通知**：系统更新、活动通知
+- **权限引导**：未开启时提供跳转系统设置的引导
+
+##### 5.4 音频质量（AudioQualitySettingsView）
+
+位置：`Classes/Setting/Pages/AudioQualitySettingsView.swift`
+
+- **在线播放质量**：标准/高/无损三档选择
+- **下载质量**：独立设置下载音质
+- **流量统计**：显示不同音质的预估流量消耗
+- **智能推荐**：根据网络环境推荐合适的音质
+
+##### 5.5 均衡器（EqualizerView）
+
+位置：`Classes/Setting/Pages/EqualizerView.swift`
+
+- **预设模式**：流行、摇滚、古典、爵士、电子、自定义等预设
+- **频段调节**：支持 60Hz、230Hz、910Hz、3.6kHz、14kHz 五段频率调节
+- **自定义垂直滑块**：提供直观的可视化调节界面
+- **实时预览**：调节后可实时听到效果变化
+
+##### 5.6 关于我们（AboutView）
+
+位置：`Classes/Setting/Pages/AboutView.swift`
+
+- **应用信息**：显示应用名称、版本号、构建版本
+- **功能介绍**：展示应用核心功能特性
+- **联系方式**：官网、邮箱、客服热线
+- **社交媒体**：微博、微信公众号等社交链接
+
+##### 5.7 帮助与反馈（HelpFeedbackView）
+
+位置：`Classes/Setting/Pages/HelpFeedbackView.swift`
+
+- **常见问题**：FAQ 列表，支持展开/收起查看答案
+- **问题反馈**：提供反馈表单，支持选择反馈类型
+- **在线客服**：快速连接在线客服
+- **联系方式**：邮件支持、电话支持
+- **使用教程**：新手引导和使用帮助
+
+##### 5.8 隐私政策（PrivacyPolicyView）
+
+位置：`Classes/Setting/Pages/PrivacyPolicyView.swift`
+
+- **完整政策**：展示完整的隐私政策内容
+- **章节划分**：信息收集、使用目的、信息存储、用户权利等章节
+- **滚动阅读**：支持长文本滚动阅读
+
+#### 可复用组件
+
+设置模块使用了以下可复用组件（位于 `Classes/Setting/Views/SettingsDetailContainer.swift`）：
+
+- **SettingsDetailContainer**：统一的设置详情页面容器，提供一致的导航栏和布局
+- **SettingsCard**：设置项卡片容器，圆角背景样式
+- **SettingsRow**：标准设置行，支持标题、副标题、右侧箭头
+- **SettingsToggleRow**：带开关的设置行
+- **SettingsGroupHeader**：分组标题
+
 #### 注意事项
 
 *   设置页面使用分组式布局，增强可读性和层次感
 *   设置项使用统一的样式，包括图标、标题和交互元素
+*   所有子页面使用 Sheet 形式呈现，保持导航一致性
+*   使用 `@Environment(\.isWideLayout)` 适配 iPad 横屏布局
 *   退出登录按钮放在底部，并使用醒目的红色
 *   版本信息放在最底部，使用较小的字体
 
@@ -746,3 +849,14 @@ struct MiniPlayerView: View {
 - ✅ 网络请求层（支持模拟数据）
 - ✅ 用户认证服务（登录/注册/社交登录）
 - ✅ 下载管理器（离线播放支持）
+
+### 设置模块完整功能
+
+- ✅ 个人资料编辑（头像、用户名、简介）
+- ✅ 邮箱与安全（邮箱管理、密码修改、账号注销）
+- ✅ 通知设置（系统权限检测、分类通知开关）
+- ✅ 音频质量（在线/下载音质、流量统计）
+- ✅ 均衡器（预设模式、自定义频段调节）
+- ✅ 关于我们（应用信息、联系方式、社交媒体）
+- ✅ 帮助与反馈（FAQ、问题反馈、客服支持）
+- ✅ 隐私政策（完整政策内容展示）

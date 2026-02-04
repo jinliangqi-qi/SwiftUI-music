@@ -21,6 +21,16 @@ struct SettingsView: View {
     // 显示退出确认
     @State private var showLogoutConfirm: Bool = false
     
+    // 页面导航状态
+    @State private var showProfileEdit = false
+    @State private var showEmailSecurity = false
+    @State private var showNotifications = false
+    @State private var showAudioQuality = false
+    @State private var showEqualizer = false
+    @State private var showAbout = false
+    @State private var showHelpFeedback = false
+    @State private var showPrivacyPolicy = false
+    
     // 用户信息
     private var userName: String {
         authService.currentUser?.username ?? "未登录"
@@ -62,6 +72,30 @@ struct SettingsView: View {
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showLogin) {
             LoginView()
+        }
+        .sheet(isPresented: $showProfileEdit) {
+            ProfileEditView()
+        }
+        .sheet(isPresented: $showEmailSecurity) {
+            EmailSecurityView()
+        }
+        .sheet(isPresented: $showNotifications) {
+            NotificationSettingsView()
+        }
+        .sheet(isPresented: $showAudioQuality) {
+            AudioQualitySettingsView()
+        }
+        .sheet(isPresented: $showEqualizer) {
+            EqualizerView()
+        }
+        .sheet(isPresented: $showAbout) {
+            AboutView()
+        }
+        .sheet(isPresented: $showHelpFeedback) {
+            HelpFeedbackView()
+        }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView()
         }
         .alert("确认退出", isPresented: $showLogoutConfirm) {
             Button("取消", role: .cancel) {}
@@ -164,7 +198,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .purple,
                     iconForegroundColor: .purple,
                     title: "个人资料",
-                    action: {}
+                    action: { showProfileEdit = true }
                 )
                 Divider()
                 SettingsItemView.withChevron(
@@ -172,7 +206,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .green,
                     iconForegroundColor: .green,
                     title: "邮箱与安全",
-                    action: {}
+                    action: { showEmailSecurity = true }
                 )
                 Divider()
                 SettingsItemView.withChevron(
@@ -180,7 +214,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .blue,
                     iconForegroundColor: .blue,
                     title: "通知设置",
-                    action: {}
+                    action: { showNotifications = true }
                 )
             }
         }
@@ -191,12 +225,12 @@ struct SettingsView: View {
     private var playbackSection: some View {
         SettingsSectionView(title: "播放") {
             VStack(spacing: 0) {
-                SettingsItemView.withText(
+                SettingsItemView.withChevron(
                     iconName: "slider.horizontal.3",
                     iconBackgroundColor: .red,
                     iconForegroundColor: .red,
                     title: "音频质量",
-                    text: storageManager.audioQuality.rawValue
+                    action: { showAudioQuality = true }
                 )
                 Divider()
                 SettingsItemView.withChevron(
@@ -204,7 +238,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .yellow,
                     iconForegroundColor: .yellow,
                     title: "均衡器",
-                    action: {}
+                    action: { showEqualizer = true }
                 )
                 Divider()
                 SettingsItemView.withToggle(
@@ -276,7 +310,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .gray,
                     iconForegroundColor: .gray,
                     title: "关于我们",
-                    action: {}
+                    action: { showAbout = true }
                 )
                 Divider()
                 SettingsItemView.withChevron(
@@ -284,7 +318,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .gray,
                     iconForegroundColor: .gray,
                     title: "帮助与反馈",
-                    action: {}
+                    action: { showHelpFeedback = true }
                 )
                 Divider()
                 SettingsItemView.withChevron(
@@ -292,7 +326,7 @@ struct SettingsView: View {
                     iconBackgroundColor: .gray,
                     iconForegroundColor: .gray,
                     title: "隐私政策",
-                    action: {}
+                    action: { showPrivacyPolicy = true }
                 )
             }
         }
