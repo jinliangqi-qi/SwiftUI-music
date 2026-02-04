@@ -3,6 +3,7 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
+//  主标签视图 - 集成全局播放器
 //
 
 import SwiftUI
@@ -42,7 +43,7 @@ struct MainTabView: View {
             // 底部迷你播放器和导航栏
             VStack(spacing: 0) {
                 // 迷你播放器
-                MiniPlayerView(song: MusicData.currentlyPlaying)
+                MiniPlayerView()
                 
                 // 底部导航栏
                 TabBarView(selectedTab: $selectedTab)

@@ -3,19 +3,37 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
+//  设置视图 - 集成 AuthService 和 StorageManager
 //
 
 import SwiftUI
 
 struct SettingsView: View {
-    // 状态变量
-    @State private var autoPlayEnabled = false
-    @State private var wifiOnlyDownload = true
+    // 认证服务
+    @StateObject private var authService = AuthService.shared
+    // 存储管理器
+    @StateObject private var storageManager = StorageManager.shared
+    
+    // 显示登录页
+    @State private var showLogin: Bool = false
+    // 显示退出确认
+    @State private var showLogoutConfirm: Bool = false
     
     // 用户信息
-    private let userName = "小明"
-    private let userHandle = "@xiaoming"
-    private let avatarUrl = "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fHBvcnRyYWl0fGVufDB8fDB8fHww"
+    private var userName: String {
+        authService.currentUser?.username ?? "未登录"
+    }
+    
+    private var userHandle: String {
+        if let user = authService.currentUser {
+            return "@\(user.email.components(separatedBy: "@").first ?? "user")"
+        }
+        return "点击登录账号"
+    }
+    
+    private var avatarUrl: String {
+        authService.currentUser?.avatarUrl ?? "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=500"
+    }
     
     var body: some View {
         ScrollView {
@@ -36,7 +54,9 @@ struct SettingsView: View {
                     userHandle: userHandle,
                     avatarUrl: avatarUrl,
                     action: {
-                        // 处理用户资料点击
+                        if !authService.isLoggedIn {
+                            showLogin = true
+                        }
                     }
                 )
                 .padding(.horizontal)
@@ -73,7 +93,7 @@ struct SettingsView: View {
                 .padding(.horizontal)
                 .padding(.top)
                 
-                // 播放设置
+                // 播放设置 - 绑定 StorageManager
                 SettingsSectionView(title: "播放") {
                     VStack(spacing: 0) {
                         SettingsItemView.withText(
@@ -81,7 +101,7 @@ struct SettingsView: View {
                             iconBackgroundColor: .red,
                             iconForegroundColor: .red,
                             title: "音频质量",
-                            text: "高清"
+                            text: storageManager.audioQuality.rawValue
                         )
                         Divider()
                         SettingsItemView.withChevron(
@@ -97,14 +117,14 @@ struct SettingsView: View {
                             iconBackgroundColor: .pink,
                             iconForegroundColor: .pink,
                             title: "自动播放",
-                            isOn: $autoPlayEnabled
+                            isOn: $storageManager.autoPlayEnabled
                         )
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top)
                 
-                // 下载设置
+                // 下载设置 - 绑定 StorageManager
                 SettingsSectionView(title: "下载") {
                     VStack(spacing: 0) {
                         SettingsItemView.withText(
@@ -112,7 +132,7 @@ struct SettingsView: View {
                             iconBackgroundColor: .indigo,
                             iconForegroundColor: .indigo,
                             title: "下载质量",
-                            text: "标准"
+                            text: storageManager.downloadQuality.rawValue
                         )
                         Divider()
                         SettingsItemView.withToggle(
@@ -120,7 +140,30 @@ struct SettingsView: View {
                             iconBackgroundColor: .teal,
                             iconForegroundColor: .teal,
                             title: "仅WiFi下载",
-                            isOn: $wifiOnlyDownload
+                            isOn: $storageManager.wifiOnlyDownload
+                        )
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top)
+                
+                // 存储管理
+                SettingsSectionView(title: "存储") {
+                    VStack(spacing: 0) {
+                        SettingsItemView.withText(
+                            iconName: "internaldrive",
+                            iconBackgroundColor: .orange,
+                            iconForegroundColor: .orange,
+                            title: "已下载",
+                            text: "\(storageManager.downloadedSongs.count) 首"
+                        )
+                        Divider()
+                        SettingsItemView.withText(
+                            iconName: "heart.fill",
+                            iconBackgroundColor: .red,
+                            iconForegroundColor: .red,
+                            title: "收藏歌曲",
+                            text: "\(storageManager.likedSongs.count) 首"
                         )
                     }
                 }
@@ -158,13 +201,17 @@ struct SettingsView: View {
                 .padding(.horizontal)
                 .padding(.top)
                 
-                // 退出登录按钮
+                // 登录/退出登录按钮
                 Button(action: {
-                    // 处理退出登录
+                    if authService.isLoggedIn {
+                        showLogoutConfirm = true
+                    } else {
+                        showLogin = true
+                    }
                 }) {
-                    Text("退出登录")
+                    Text(authService.isLoggedIn ? "退出登录" : "登录账号")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.red)
+                        .foregroundColor(authService.isLoggedIn ? .red : .purple)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(.systemBackground))
@@ -179,10 +226,21 @@ struct SettingsView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .padding(.top, 16)
-                    .padding(.bottom, 100) // 增加底部间距，为迷你播放器和导航栏留出空间
+                    .padding(.bottom, 100)
             }
         }
         .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showLogin) {
+            LoginView()
+        }
+        .alert("确认退出", isPresented: $showLogoutConfirm) {
+            Button("取消", role: .cancel) {}
+            Button("退出", role: .destructive) {
+                authService.logout()
+            }
+        } message: {
+            Text("确定要退出登录吗？")
+        }
     }
 }
 

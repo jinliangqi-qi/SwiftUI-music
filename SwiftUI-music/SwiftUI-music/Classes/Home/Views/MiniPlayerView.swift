@@ -3,34 +3,42 @@
 //  SwiftUI-music
 //
 //  Created by 金亮大神on 2025/3/12.
+//  迷你播放器视图 - 集成 AudioPlayerManager
 //
 
 import SwiftUI
 
 struct MiniPlayerView: View {
-    let song: Song
-    @State private var isPlaying: Bool = true
+    // 使用全局播放器管理器
+    @StateObject private var playerManager = AudioPlayerManager.shared
     @State private var showPlayerView: Bool = false
+    
+    // 当前显示的歌曲（优先使用播放器管理器的歌曲）
+    private var displaySong: Song {
+        playerManager.currentSong ?? MusicData.currentlyPlaying
+    }
     
     var body: some View {
         HStack(spacing: 0) {
             // 左侧：歌曲信息
             HStack(spacing: 12) {
                 // 歌曲封面
-                CachedImageView(urlString: song.imageUrl, cornerRadius: 6)
+                CachedImageView(urlString: displaySong.imageUrl, cornerRadius: 6)
                     .frame(width: 40, height: 40)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .shineEffect() // 添加闪光效果
                 
                 // 歌曲信息
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(song.title)
+                    Text(displaySong.title)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.primary)
+                        .lineLimit(1)
                     
-                    Text(song.artist)
+                    Text(displaySong.artist)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
             .onTapGesture {
@@ -46,14 +54,14 @@ struct MiniPlayerView: View {
                 // 播放/暂停按钮
                 Button(action: {
                     withAnimation(AnimationUtils.easeAnimation) {
-                        isPlaying.toggle()
+                        playerManager.togglePlayPause()
                     }
                 }) {
                     Circle()
                         .fill(Color.purple)
                         .frame(width: 32, height: 32)
                         .overlay(
-                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.system(size: 12))
                                 .foregroundColor(.white)
                         )
@@ -61,7 +69,7 @@ struct MiniPlayerView: View {
                 
                 // 下一首按钮
                 Button(action: {
-                    // 下一首歌曲的操作
+                    playerManager.playNext()
                 }) {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 16))
@@ -74,13 +82,24 @@ struct MiniPlayerView: View {
         .padding(.vertical, 12)
         .background(Color(.systemBackground))
         .overlay(
-            Rectangle()
-                .frame(height: 1)
-                .foregroundColor(Color.gray.opacity(0.2)),
+            // 进度条
+            GeometryReader { geometry in
+                Rectangle()
+                    .fill(Color.purple.opacity(0.3))
+                    .frame(width: geometry.size.width * playerManager.progress, height: 2)
+            }
+            .frame(height: 2),
             alignment: .top
         )
         .fullScreenCover(isPresented: $showPlayerView) {
-            PlayerView(song: song)
+            PlayerView(song: displaySong)
+        }
+        .onAppear {
+            // 如果没有当前歌曲，初始化播放队列
+            if playerManager.currentSong == nil {
+                playerManager.playQueue(MusicData.recentlyPlayed, startIndex: 0)
+                playerManager.pause() // 初始暂停
+            }
         }
     }
 }
@@ -88,7 +107,7 @@ struct MiniPlayerView: View {
 #Preview {
     VStack {
         Spacer()
-        MiniPlayerView(song: MusicData.currentlyPlaying)
+        MiniPlayerView()
     }
     .background(Color(.systemBackground))
 }

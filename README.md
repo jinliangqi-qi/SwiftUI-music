@@ -6,6 +6,13 @@
 
 本项目是一个基于SwiftUI开发的音乐应用，提供了丰富的音乐播放和管理功能，包括首页推荐、搜索、资料库、个人资料和设置等核心页面。应用采用了现代化的UI设计，流畅的动画效果，以及符合人体工程学的交互体验。
 
+### 技术特性
+
+- **兼容性**：iOS 26+、iPadOS、Swift 6
+- **架构模式**：MVVM + 单例模式
+- **并发安全**：@MainActor、Sendable、async/await
+- **响应式编程**：Combine + @Published
+
 ## 应用架构
 
 应用采用了标签式导航结构，主要包含以下几个核心页面：
@@ -18,7 +25,152 @@
 
 此外，应用还包含一个全局的播放器界面和迷你播放器，用于控制音乐播放。
 
-## 核心页面功能详解
+## 核心功能模块
+
+### 🎵 音频播放引擎（AudioPlayerManager）
+
+位置：`Core/Audio/AudioPlayerManager.swift`
+
+基于 AVFoundation 实现的完整音频播放引擎，提供：
+
+- **播放控制**：播放/暂停/上一首/下一首
+- **进度管理**：实时播放进度和拖动定位
+- **循环模式**：单曲循环/列表循环/随机播放
+- **后台播放**：支持后台音频播放和锁屏控制
+- **收藏功能**：集成 StorageManager 的收藏管理
+
+```swift
+// 使用示例
+AudioPlayerManager.shared.play(song: song, playlist: songs)
+AudioPlayerManager.shared.togglePlayPause()
+AudioPlayerManager.shared.seek(to: 0.5) // 跳转到 50%
+```
+
+### 🔍 搜索服务（SearchService）
+
+位置：`Core/Services/SearchService.swift`
+
+智能搜索服务，支持：
+
+- **本地搜索**：歌曲、艺术家、专辑多维度搜索
+- **防抖处理**：避免频繁搜索请求
+- **搜索历史**：自动保存和管理搜索记录
+- **搜索建议**：智能推荐搜索词
+- **热门搜索**：展示热门搜索关键词
+
+```swift
+// 使用示例
+await SearchService.shared.search(query: "周杰伦")
+SearchService.shared.addToSearchHistory("林俊杰")
+SearchService.shared.getSearchSuggestions(for: "陈")
+```
+
+### 💾 本地存储（StorageManager）
+
+位置：`Core/Storage/StorageManager.swift`
+
+使用 UserDefaults 的持久化存储管理，包含：
+
+- **收藏管理**：喜欢的歌曲增删查
+- **播放历史**：记录播放过的歌曲
+- **搜索历史**：保存搜索记录
+- **下载管理**：已下载歌曲的管理
+- **设置存储**：用户偏好设置保存
+
+```swift
+// 使用示例
+StorageManager.shared.addLikedSong(song)
+StorageManager.shared.getLikedSongs()
+StorageManager.shared.addToPlayHistory(song)
+```
+
+### 🌐 网络层（NetworkManager）
+
+位置：`Core/Network/NetworkManager.swift`
+
+网络请求封装层，支持：
+
+- **搜索 API**：音乐搜索接口
+- **推荐 API**：个性化推荐数据
+- **歌曲详情**：获取歌曲完整信息
+- **歌词获取**：获取歌曲歌词
+- **模拟数据**：无后端时的演示模式
+
+```swift
+// 使用示例
+let results = try await NetworkManager.shared.search(query: "夜曲")
+let recommendations = try await NetworkManager.shared.getRecommendations()
+```
+
+### 👤 用户认证（AuthService）
+
+位置：`Core/Services/AuthService.swift`
+
+完整的用户认证服务：
+
+- **登录/注册**：邮箱密码认证
+- **社交登录**：Apple/微信/QQ 登录支持
+- **会话管理**：自动登录和会话保持
+- **用户信息**：用户资料管理
+- **安全退出**：安全的登出流程
+
+```swift
+// 使用示例
+try await AuthService.shared.login(email: "user@example.com", password: "123456")
+try await AuthService.shared.register(email: "user@example.com", password: "123456", username: "用户名")
+AuthService.shared.logout()
+```
+
+### ⬇️ 下载管理（DownloadManager）
+
+位置：`Core/Services/DownloadManager.swift`
+
+离线下载功能：
+
+- **下载队列**：支持多任务下载队列
+- **进度跟踪**：实时下载进度显示
+- **断点续传**：支持下载中断恢复
+- **本地管理**：已下载文件的管理
+- **存储优化**：智能存储空间管理
+
+```swift
+// 使用示例
+await DownloadManager.shared.download(song: song)
+DownloadManager.shared.pauseDownload(songId: song.id)
+DownloadManager.shared.getLocalURL(for: song)
+```
+
+## 项目目录结构
+
+```
+SwiftUI-music/
+├── Core/                           # 核心功能模块
+│   ├── Audio/
+│   │   └── AudioPlayerManager.swift    # 音频播放引擎
+│   ├── Network/
+│   │   └── NetworkManager.swift        # 网络请求管理
+│   ├── Storage/
+│   │   └── StorageManager.swift        # 本地存储管理
+│   └── Services/
+│       ├── AuthService.swift           # 用户认证服务
+│       ├── DownloadManager.swift       # 下载管理器
+│       └── SearchService.swift         # 搜索服务
+├── Classes/                        # 业务模块
+│   ├── Auth/
+│   │   └── Views/
+│   │       └── LoginView.swift         # 登录/注册页面
+│   ├── Home/                           # 首页模块
+│   ├── Search/                         # 搜索模块
+│   ├── Library/                        # 资料库模块
+│   ├── Profile/                        # 个人资料模块
+│   ├── Player/                         # 播放器模块
+│   ├── Setting/                        # 设置模块
+│   └── Main/                           # 主框架
+├── Models/                         # 数据模型
+│   └── MusicModels.swift               # 音乐相关模型
+├── Utils/                          # 工具类
+└── Resources/                      # 资源文件
+```
 
 ### 1. 首页（HomeView）
 
@@ -548,6 +700,8 @@ struct MiniPlayerView: View {
 2.  **懒加载**：使用LazyVGrid和LazyHGrid延迟加载内容
 3.  **视图复用**：通过ForEach和List实现视图的高效复用
 4.  **内存管理**：合理使用weak引用和生命周期管理
+5.  **搜索防抖**：SearchService 使用防抖机制避免频繁搜索
+6.  **单例模式**：核心服务使用单例减少内存开销
 
 ## 适配与兼容性
 
@@ -555,9 +709,40 @@ struct MiniPlayerView: View {
 
 1.  **暗黑模式**：支持系统暗黑模式，自动切换UI样式
 2.  **屏幕尺寸**：适配不同尺寸的iPhone和iPad
-3.  **系统版本**：支持iOS 14及以上版本
-4.  **辅助功能**：支持动态字体大小和VoiceOver
+3.  **系统版本**：支持iOS 26及以上版本
+4.  **Swift 版本**：完全兼容 Swift 6，使用 @MainActor 和 Sendable 确保并发安全
+5.  **辅助功能**：支持动态字体大小和VoiceOver
+
+## 快速开始
+
+### 环境要求
+
+- Xcode 16.0+
+- iOS 26.0+ / iPadOS 26.0+
+- Swift 6.0+
+
+### 运行项目
+
+1. 克隆项目到本地
+2. 使用 Xcode 打开 `SwiftUI-music.xcodeproj`
+3. 选择目标设备或模拟器
+4. 点击运行按钮或按 `Cmd + R`
+
+### 主要依赖
+
+- SwiftUI：UI 框架
+- AVFoundation：音频播放
+- Combine：响应式编程
 
 ## 总结
 
 本项目展示了如何使用SwiftUI构建一个功能完善、UI精美的音乐应用。通过模块化设计和组件复用，实现了高效的开发和良好的用户体验。项目中的设计模式和性能优化策略，为构建大型SwiftUI应用提供了有价值的参考。
+
+### 新增核心功能
+
+- ✅ 音频播放引擎（AVFoundation 集成）
+- ✅ 智能搜索服务（防抖 + 多维度搜索）
+- ✅ 本地存储管理（UserDefaults 持久化）
+- ✅ 网络请求层（支持模拟数据）
+- ✅ 用户认证服务（登录/注册/社交登录）
+- ✅ 下载管理器（离线播放支持）

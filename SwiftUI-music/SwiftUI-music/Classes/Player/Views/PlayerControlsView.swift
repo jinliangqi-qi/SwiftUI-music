@@ -3,6 +3,7 @@
 //  SwiftUI-music
 //
 //  Created by Trae AI on 2025/3/12.
+//  播放控制视图 - 集成 AudioPlayerManager
 //
 
 import SwiftUI
@@ -10,7 +11,11 @@ import SwiftUI
 struct PlayerControlsView: View {
     @Binding var isPlaying: Bool
     @Binding var isShuffle: Bool
-    @Binding var repeatMode: PlayerView.RepeatMode
+    @Binding var repeatMode: RepeatMode
+    
+    // 回调函数
+    var onPrevious: (() -> Void)?
+    var onNext: (() -> Void)?
     
     var body: some View {
         HStack(spacing: 24) {
@@ -25,7 +30,7 @@ struct PlayerControlsView: View {
             
             // 上一首按钮
             Button(action: {
-                // 播放上一首歌曲
+                onPrevious?()
             }) {
                 Image(systemName: "backward.fill")
                     .font(.system(size: 24))
@@ -41,7 +46,7 @@ struct PlayerControlsView: View {
             
             // 下一首按钮
             Button(action: {
-                // 播放下一首歌曲
+                onNext?()
             }) {
                 Image(systemName: "forward.fill")
                     .font(.system(size: 24))
@@ -49,11 +54,8 @@ struct PlayerControlsView: View {
             
             // 循环播放按钮
             Button(action: {
-                switch repeatMode {
-                case .none: repeatMode = .all
-                case .all: repeatMode = .one
-                case .one: repeatMode = .none
-                }
+                // 使用 RepeatMode 的 next 属性循环
+                repeatMode = repeatMode.next
             }) {
                 Group {
                     switch repeatMode {

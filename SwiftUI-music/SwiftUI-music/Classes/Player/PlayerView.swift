@@ -3,25 +3,24 @@
 //  SwiftUI-music
 //
 //  Created by Trae AI on 2025/3/12.
+//  全屏播放器视图 - 集成 AudioPlayerManager
 //
 
 import SwiftUI
 
 struct PlayerView: View {
-    // 当前播放的歌曲
+    // 传入的歌曲（用于初始化）
     let song: Song
     
-    // 播放状态
-    @State private var isPlaying: Bool = true
-    @State private var currentTime: Double = 73 // 1:13 in seconds
-    @State private var totalTime: Double = 210 // 3:30 in seconds
-    @State private var isShuffle: Bool = false
-    @State private var repeatMode: RepeatMode = .none
-    @State private var isLiked: Bool = false
+    // 使用全局播放器管理器
+    @StateObject private var playerManager = AudioPlayerManager.shared
     
-    // 播放模式枚举
-    enum RepeatMode {
-        case none, one, all
+    // 环境
+    @Environment(\.dismiss) private var dismiss
+    
+    // 当前显示的歌曲
+    private var displaySong: Song {
+        playerManager.currentSong ?? song
     }
     
     var body: some View {
@@ -38,32 +37,49 @@ struct PlayerView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // 顶部导航
-                    PlayerHeaderView(songSource: "来自：\(song.artist) - 热门单曲")
+                    PlayerHeaderView(songSource: "来自：\(displaySong.artist) - 热门单曲")
                     
                     // 专辑封面
-                    AlbumCoverView(imageUrl: song.imageUrl)
+                    AlbumCoverView(imageUrl: displaySong.imageUrl)
                     
                     // 歌曲信息
-                    SongInfoView(title: song.title, artist: song.artist)
+                    SongInfoView(title: displaySong.title, artist: displaySong.artist)
                     
-                    // 进度条
+                    // 进度条 - 使用播放器管理器的数据
                     ProgressBarView(
-                        currentTime: $currentTime,
-                        totalTime: totalTime
+                        currentTime: Binding(
+                            get: { playerManager.currentTime },
+                            set: { playerManager.seek(to: $0) }
+                        ),
+                        totalTime: playerManager.duration > 0 ? playerManager.duration : (song.duration ?? 210)
                     )
                     
-                    // 播放控制
+                    // 播放控制 - 使用播放器管理器
                     PlayerControlsView(
-                        isPlaying: $isPlaying,
-                        isShuffle: $isShuffle,
-                        repeatMode: $repeatMode
+                        isPlaying: Binding(
+                            get: { playerManager.isPlaying },
+                            set: { _ in playerManager.togglePlayPause() }
+                        ),
+                        isShuffle: Binding(
+                            get: { playerManager.isShuffleEnabled },
+                            set: { _ in playerManager.toggleShuffle() }
+                        ),
+                        repeatMode: Binding(
+                            get: { playerManager.repeatMode },
+                            set: { _ in playerManager.toggleRepeatMode() }
+                        ),
+                        onPrevious: { playerManager.playPrevious() },
+                        onNext: { playerManager.playNext() }
                     )
                     
                     // 歌词
                     LyricsView()
                     
-                    // 额外控制
-                    ExtraControlsView(isLiked: $isLiked)
+                    // 额外控制 - 使用播放器管理器的收藏状态
+                    ExtraControlsView(isLiked: Binding(
+                        get: { playerManager.isCurrentSongLiked },
+                        set: { _ in playerManager.toggleLike() }
+                    ))
                     
                     // 音频质量
                     AudioQualityView()
@@ -71,13 +87,19 @@ struct PlayerView: View {
                     // 波形动画
                     WaveAnimationView()
                     
-                    Spacer(minLength: 100) // 增加底部间距，为迷你播放器和导航栏留出空间
+                    Spacer(minLength: 100)
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 100) // 添加底部padding，确保内容不被遮挡
+                .padding(.bottom, 100)
             }
         }
         .foregroundColor(.white)
+        .onAppear {
+            // 如果当前没有播放，或者播放的不是传入的歌曲，则开始播放
+            if playerManager.currentSong?.id != song.id {
+                playerManager.play(song: song)
+            }
+        }
     }
 }
 
